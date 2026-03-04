@@ -1,4 +1,15 @@
 const path = require('path')
+const fs = require('fs')
+
+// Skip engine download if a custom binary is already bundled in the package.
+// This is the case when installing from our vendored tarball which includes
+// a patched libquery_engine built from JuisciAdmin/prisma-engines.
+const enginesDir = path.join(__dirname, '..')
+const hasBundledEngine = fs.readdirSync(enginesDir).some((f) => f.startsWith('libquery_engine-') && f.endsWith('.node'))
+if (hasBundledEngine) {
+  console.log('prisma:engines Custom engine binary found, skipping official download.')
+  process.exit(0)
+}
 
 const postInstallScriptPath = path.join(__dirname, '..', 'dist', 'scripts', 'postinstall.js')
 const localInstallScriptPath = path.join(__dirname, '..', 'dist', 'scripts', 'localinstall.js')
