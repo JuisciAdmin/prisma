@@ -5,6 +5,16 @@ const fs = require('fs')
 const path = require('path')
 const c = require('./colors')
 
+// If @prisma/engines bundles a custom binary (JuisciAdmin/prisma-engines fork),
+// tell prisma generate to use it instead of downloading the official one.
+try {
+  const enginesDir = path.dirname(require.resolve('@prisma/engines/package.json'))
+  const bundled = fs.readdirSync(enginesDir).find((f) => f.startsWith('libquery_engine-') && f.endsWith('.node'))
+  if (bundled) {
+    process.env.PRISMA_QUERY_ENGINE_LIBRARY = path.join(enginesDir, bundled)
+  }
+} catch {} // @prisma/engines not installed yet
+
 const exec = promisify(childProcess.exec)
 
 function debug(message, ...optionalParams) {
@@ -39,7 +49,7 @@ function findPackageRoot(startPath, limit = 10) {
         if (pkg.name && !['@prisma/cli', 'prisma'].includes(pkg.name)) {
           return pkgPath.replace('package.json', '')
         }
-      } catch {} // eslint-disable-line no-empty
+      } catch {}
     }
     currentPath = path.join(currentPath, '../')
   }
@@ -115,7 +125,7 @@ function getLocalPackagePath() {
     if (packagePath) {
       return require.resolve('prisma')
     }
-  } catch (e) {} // eslint-disable-line no-empty
+  } catch (e) {}
 
   // TODO: consider removing this
   try {
@@ -123,7 +133,7 @@ function getLocalPackagePath() {
     if (packagePath) {
       return require.resolve('@prisma/cli')
     }
-  } catch (e) {} // eslint-disable-line no-empty
+  } catch (e) {}
 
   return null
 }
