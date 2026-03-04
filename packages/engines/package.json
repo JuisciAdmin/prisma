@@ -38,6 +38,7 @@
     "download",
     "scripts",
     "libquery_engine-darwin-arm64.dylib.node",
+    "libquery_engine-linux-musl-openssl-3.0.x.so.node",
     "schema-engine-darwin-arm64"
   ],
   "sideEffects": false
