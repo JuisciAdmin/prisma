@@ -37,7 +37,8 @@
     "dist",
     "download",
     "scripts",
-    "libquery_engine-darwin-arm64.dylib.node"
+    "libquery_engine-darwin-arm64.dylib.node",
+    "schema-engine-darwin-arm64"
   ],
   "sideEffects": false
 }
