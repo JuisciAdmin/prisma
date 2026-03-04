@@ -34,19 +34,27 @@ export async function ensureNeededBinariesExist({
 }: EnsureSomeBinariesExistInput) {
   const binaryDir = path.join(__dirname, '../')
 
+  // Check if a custom query engine binary is bundled (JuisciAdmin/prisma-engines fork).
+  const fs = await import('fs')
+  const hasBundledEngine = fs
+    .readdirSync(binaryDir)
+    .some((f: string) => f.startsWith('libquery_engine-') && f.endsWith('.node'))
+
   const binaries = {} as Record<BinaryType, string>
 
   if (!hasMigrateAdapterInConfig) {
     binaries[BinaryType.SchemaEngineBinary] = binaryDir
   }
 
-  // query engine should only be downloaded if QE is enabled explicitly by specifying the
-  // engineType generator property.
+  // Skip query engine download if a custom binary is bundled — it should not be
+  // overwritten by the official download. Schema engine is still downloaded normally.
   const usesQueryCompiler = clientEngineType === 'client'
 
-  if (!usesQueryCompiler) {
+  if (!usesQueryCompiler && !hasBundledEngine) {
     const cliQueryEngineBinaryType = getCliQueryEngineBinaryType(clientEngineType)
     binaries[cliQueryEngineBinaryType] = binaryDir
+  } else if (hasBundledEngine) {
+    debug('Custom query engine binary found in package, skipping query engine download.')
   }
 
   debug(`binaries to download ${Object.keys(binaries).join(', ')}`)
