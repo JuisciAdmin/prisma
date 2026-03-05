@@ -5,11 +5,54 @@ const fs = require('fs')
 const path = require('path')
 const c = require('./colors')
 
+function isLinuxMuslRuntime() {
+  if (process.platform !== 'linux') {
+    return false
+  }
+
+  if (!process.report || typeof process.report.getReport !== 'function') {
+    return false
+  }
+
+  const report = process.report.getReport()
+  return !report?.header?.glibcVersionRuntime
+}
+
+function resolveBundledQueryEngine(enginesDir) {
+  const files = fs.readdirSync(enginesDir).filter((f) => f.startsWith('libquery_engine-') && f.endsWith('.node'))
+
+  if (files.length === 0) {
+    return undefined
+  }
+
+  if (process.platform === 'darwin') {
+    return files.find((f) => f === `libquery_engine-darwin-${process.arch}.dylib.node`) ?? files[0]
+  }
+
+  if (process.platform === 'linux' && process.arch === 'x64') {
+    if (isLinuxMuslRuntime()) {
+      return (
+        files.find((f) => f === 'libquery_engine-linux-musl-openssl-3.0.x.so.node') ??
+        files.find((f) => f.includes('linux-musl')) ??
+        files[0]
+      )
+    }
+
+    return (
+      files.find((f) => f === 'libquery_engine-debian-openssl-3.0.x.so.node') ??
+      files.find((f) => f.includes('debian-openssl')) ??
+      files[0]
+    )
+  }
+
+  return files[0]
+}
+
 // If @prisma/engines bundles a custom binary (JuisciAdmin/prisma-engines fork),
 // tell prisma generate to use it instead of downloading the official one.
 try {
   const enginesDir = path.dirname(require.resolve('@prisma/engines/package.json'))
-  const bundled = fs.readdirSync(enginesDir).find((f) => f.startsWith('libquery_engine-') && f.endsWith('.node'))
+  const bundled = resolveBundledQueryEngine(enginesDir)
   if (bundled) {
     process.env.PRISMA_QUERY_ENGINE_LIBRARY = path.join(enginesDir, bundled)
   }
